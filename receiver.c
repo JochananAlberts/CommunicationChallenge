@@ -10,13 +10,13 @@ int main(void) {
     switchbox_set_pin(IO_AR3, SWB_UART1_RX);
 
     uart_init(UART0);
-    uart_reset_fifos(UART0);
     uart_init(UART1);
+    uart_reset_fifos(UART0);
     uart_reset_fifos(UART1);
 
     printf("listening\n");
 
-    char message[1000];
+    char message[256];
     size_t i = 0;
 
     // Switch between channels by commenting out channel
@@ -31,14 +31,6 @@ int main(void) {
             printf("MSG: %s\n", message);      
             i = 0;                             
             continue;
-        }
-
-        if (i < sizeof(message) - 1) {         
-            message[i++] = (char)b;            
-        } else {
-            message[i] = '\0';
-            printf("MSG(partial): %s\n", message);
-            i = 0;
         }
     }
 
