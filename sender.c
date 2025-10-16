@@ -1,47 +1,67 @@
-// #include <libpynq.h>
+#include <libpynq.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
 
-int main(void)
-{
+#define MAX_CHARS_PER_LINE  40
 
-    // pynq_init();
-    // switchbox_init();
+int main(void) {
+    pynq_init();
+    switchbox_init();
 
-    // switchbox_set_pin(IO_AR0, SWB_UART0_RX); 
-    // switchbox_set_pin(IO_AR2, SWB_UART1_RX);
+    switchbox_set_pin(IO_AR0, SWB_UART0_RX);
+    switchbox_set_pin(IO_AR1, SWB_UART0_TX);
+    uart_init(UART0);
+    uart_reset_fifos(UART0);
 
-    // uart_init(UART0);
-    // uart_reset_fifos(UART0);
-    // uart_init(UART1);
-    // uart_reset_fifos(UART1);
+    setvbuf(stdout, NULL, _IONBF, 0);
+    printf("listening\n");
 
-    
+    display_t d;
+    display_init(&d);
+    displayDisplayOff(&d);  
+    sleep_msec(150);
+    displayDisplayOn(&d);   
+    sleep_msec(150);
+    displayBacklightOn(&d);
+
+    FontxFile f[2];
+    InitFontx(f, "../../fonts/ILGH16XB.FNT", "");
+    displaySetFontDirection(&d, TEXT_DIRECTION0);
+    displayFillScreen(&d, RGB_WHITE);
+    displayDrawString(&d, f, 6, 18, (uint8_t*)"UART0 -> LCD", RGB_BLACK);
+    displayDrawString(&d, f, 6, 42, (uint8_t*)"listening...", RGB_BLACK);
+
+    char message[255];
+    size_t i = 0;
+
     for (;;) {
-        char message[256];
+        uint8_t b = uart_recv(UART0);
 
-        printf("Type a message (or /stop to exit): ");
-        if (!fgets(message, sizeof message, stdin)) {
-            break;
-        }
-        message[strcspn(message, "\r\n")] = '\0';
+        if (b == '\r') continue;
 
-        if (strcmp(message, "/stop") == 0) {
-            break;
+        if (b == '\n') {
+            message[i] = '\0';
+            printf("MSG: %s\n", message);
+
+            char line[MAX_CHARS_PER_LINE + 1];
+            strncpy(line, message, MAX_CHARS_PER_LINE);
+            line[MAX_CHARS_PER_LINE] = '\0';
+
+            displayDrawFillRect(&d, 0, 60, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1, RGB_WHITE);
+            displayDrawString(&d, f, 6, 80, (uint8_t*)line, RGB_BLUE);
+
+            i = 0;
+            continue;
         }
 
-        for (int i = 0; message[i] != '\0'; i++){
-            uint8_t b = (uint8_t) message[i];
-            // uart_send (UART0, b);
-            // uart_send (UART1, b);
-            printf("sent byte %u\n", b);
-        }
- 
+    }
+    displayFillScreen(&d, RGB_BLACK);
+    display_destroy(&d);
+    switchbox_destroy();
+    pynq_destroy();
+
+    return 0;
 }
-    // switchbox_destroy();
-    // pynq_destroy();
 
-    return EXIT_SUCCESS;
 }
