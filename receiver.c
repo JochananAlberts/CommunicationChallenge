@@ -21,10 +21,8 @@ int main(void) {
 
     display_t d;
     display_init(&d);
-    displayDisplayOff(&d);  
-    sleep_msec(150);
-    displayDisplayOn(&d);   
-    sleep_msec(150);
+    displayDisplayOff(&d);  sleep_msec(150);
+    displayDisplayOn(&d);   sleep_msec(150);
     displayBacklightOn(&d);
 
     FontxFile f[2];
@@ -34,13 +32,13 @@ int main(void) {
     displayDrawString(&d, f, 6, 18, (uint8_t*)"UART0 -> LCD", RGB_BLACK);
     displayDrawString(&d, f, 6, 42, (uint8_t*)"listening...", RGB_BLACK);
 
-    char message[255];
+    char message[1000];
     size_t i = 0;
 
     for (;;) {
         uint8_t b = uart_recv(UART0);
         // uint8_t b = uart_recv(UART1);
-
+        // if (b >= 'z') continue;
         if (b == '\r') continue;
 
         if (b == '\n') {
@@ -58,8 +56,15 @@ int main(void) {
             continue;
         }
 
+        if (i < sizeof(message) - 1) {
+            message[i++] = (char)b;
+        } else {
+            message[i] = '\0';
+            printf("MSG(partial): %s\n", message);
+            i = 0;
+        }
     }
-    displayFillScreen(&d, RGB_BLACK);
+
     display_destroy(&d);
     switchbox_destroy();
     pynq_destroy();
